@@ -129,3 +129,46 @@
 ### PS.
 
 在本地IDE部署本项目的步骤查看博客：[前后端分离项目在本地IDE部署步骤 | LeDao的博客 (zoutl.cn)](https://blog.zoutl.cn/453.html)
+ @RequestMapping("/getAll")
+    public Map<String, Object> add(Paper paper) {
+        Map<String, Object> resultMap = new HashMap<>(16);
+        paper.setUserName(userService.findById(paper.getUserId()).getUserName());
+        paperService.add(paper);
+        Paper lastPaper = paperService.findByUserIdLastOne(paper.getUserId());
+        List<Question> allSingleQuestionList = questionService.getQuestionByCourseIdAndQuestionType(paper.getCourseId(), "单选题");
+        List<Question> allFillQuestionList = questionService.getQuestionByCourseIdAndQuestionType(paper.getCourseId(), "填空题");
+        //打乱题目顺序,实现随机选题
+//        Collections.shuffle(allSingleQuestionList);
+//        Collections.shuffle(allFillQuestionList);
+        List<PaperQuestion> resultSingleQuestionList = new ArrayList<>();
+        List<PaperQuestion> resultFillQuestionList = new ArrayList<>();
+        //添加15道单选题
+        for (int i = 0; i < allSingleQuestionList.size(); i++) {
+            PaperQuestion paperQuestion = new PaperQuestion();
+            Question question = allSingleQuestionList.get(i);
+            paperQuestion.setPaperId(lastPaper.getId());
+            paperQuestion.setQuestionId(question.getId());
+            paperQuestion.setCourseName("单选题");
+            paperQuestionService.add(paperQuestion);
+            paperQuestion.setQuestion(questionService.findById(paperQuestion.getQuestionId()));
+            List<Answer> answerList = answerService.getAnswerByQuestionId(paperQuestion.getQuestionId());
+            paperQuestion.setAnswerList(answerList);
+            resultSingleQuestionList.add(paperQuestion);
+        }
+        //添加5道填空题
+        for (int i = 0; i < allFillQuestionList.size(); i++) {
+            PaperQuestion paperQuestion = new PaperQuestion();
+            Question question = allFillQuestionList.get(i);
+            paperQuestion.setPaperId(lastPaper.getId());
+            paperQuestion.setQuestionId(question.getId());
+            paperQuestion.setCourseName("填空题");
+            paperQuestionService.add(paperQuestion);
+            paperQuestion.setQuestion(questionService.findById(paperQuestion.getQuestionId()));
+            List<Answer> answerList = answerService.getAnswerByQuestionId(paperQuestion.getQuestionId());
+            paperQuestion.setAnswerList(answerList);
+            resultFillQuestionList.add(paperQuestion);
+        }
+        resultMap.put("resultSingleQuestionList", resultSingleQuestionList);
+        resultMap.put("resultFillQuestionList", resultFillQuestionList);
+        return resultMap;
+    } 
